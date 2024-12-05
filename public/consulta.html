@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Productos</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+    <div class="w3-container">
+        <h1>Consulta de Productos</h1>
+        <button class="w3-button w3-blue" id="consultar">Consultar Productos</button>
+        <table class="w3-table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Precio</th>
+                    <th>Cantidad</th>
+                </tr>
+            </thead>
+            <tbody id="productData"></tbody>
+        </table>
+    </div>
+    <script>
+        document.getElementById('consultar').addEventListener('click', function() {
+            fetch('/api/productos/getAll')
+            .then(response => response.json())
+            .then(data => {
+                let html = '';
+                data.forEach(d => {
+                    html += `
+                        <tr>
+                            <td>${d.product_name}</td>
+                            <td>${d.price.toFixed(2)}</td>
+                            <td>${d.quantity}</td>
+                        </tr>
+                    `;
+                });
+                document.getElementById("productData").innerHTML = html;
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>
+

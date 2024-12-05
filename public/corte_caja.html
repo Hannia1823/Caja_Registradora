@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corte de Caja</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+    <div class="w3-container">
+        <h1>Corte de Caja</h1>
+        <button class="w3-button w3-blue" id="generateCut">Generar Corte</button>
+        <h3>Total Vendido: $<span id="totalSold">0.00</span></h3>
+        <h3>Transacciones del Día:</h3>
+        <table class="w3-table w3-bordered">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad Vendida</th>
+                    <th>Total</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody id="transactions"></tbody>
+        </table>
+    </div>
+
+    <script>
+        document.getElementById('generateCut').addEventListener('click', function () {
+            fetch('/api/caja/corte')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalSold').textContent = data.total.toFixed(2);
+
+                    const transactionsTable = document.getElementById('transactions');
+                    transactionsTable.innerHTML = '';
+                    data.transactions.forEach(transaction => {
+                        const row = `
+                            <tr>
+                                <td>${transaction.product_name}</td>
+                                <td>${transaction.quantity}</td>
+                                <td>${transaction.total.toFixed(2)}</td>
+                                <td>${transaction.sale_date}</td>
+                            </tr>
+                        `;
+                        transactionsTable.innerHTML += row;
+                    });
+                })
+                .catch(error => console.error('Error al generar el corte:', error));
+        });
+    </script>
+</body>
+</html>
+

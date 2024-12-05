@@ -1,0 +1,57 @@
+const express = require('express');
+const sqlite3 = require('sqlite3').verbose();
+const bodyParser = require('body-parser');
+const path = require('path');
+
+const app = express();
+const port = 3000;
+
+// Middleware
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Conectar y configurar la base de datos
+const db = new sqlite3.Database('caja_registradora.db', (err) => {
+  if (err) {
+    console.error('Error al abrir la base de datos:', err);
+  } else {
+    console.log('Base de datos conectada');
+    // Crear tabla de productos si no existe
+    db.run(`CREATE TABLE IF NOT EXISTS productos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_name TEXT,
+      price REAL,
+      quantity INTEGER
+    )`);
+  }
+});
+
+// Endpoint para registrar un nuevo producto
+app.post('/insert', (req, res) => {
+  const { product_name, price, quantity } = req.body;
+  const stmt = db.prepare('INSERT INTO productos (product_name, price, quantity) VALUES (?, ?, ?)');
+  stmt.run(product_name, price, quantity, function (err) {
+    if (err) {
+      res.status(500).send('Error al insertar producto');
+    } else {
+      res.send('Producto registrado correctamente');
+    }
+  });
+  stmt.finalize();
+});
+
+// Endpoint para obtener todos los productos
+app.get('/getAll', (req, res) => {
+  db.all('SELECT * FROM productos', [], (err, rows) => {
+    if (err) {
+      res.status(500).send('Error al consultar productos');
+    } else {
+      res.json(rows);
+    }
+  });
+});
+
+// Iniciar servidor
+app.listen(port, () => {
+  console.log(`Servidor corriendo en http://localhost:${port}`);
+});

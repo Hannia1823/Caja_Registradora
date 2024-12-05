@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventas</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+    <div class="w3-container">
+        <h1>Registrar Venta</h1>
+        <form id="salesForm" class="w3-container">
+            <label for="product_name">Nombre del Producto:</label>
+            <select class="w3-input" id="product_name" required>
+                <!-- Opciones cargadas dinámicamente -->
+            </select>
+            <label for="quantity">Cantidad:</label>
+            <input class="w3-input" type="number" id="quantity" required min="1">
+            <button class="w3-button w3-green" type="button" id="addToCart">Añadir al Carrito</button>
+        </form>
+        <h2>Productos Seleccionados</h2>
+        <table class="w3-table w3-bordered">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Total</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="cart"></tbody>
+        </table>
+        <h3>Total a Pagar: $<span id="totalAmount">0.00</span></h3>
+        <button class="w3-button w3-blue" id="pay">Pagar</button>
+    </div>
+    <script>
+        let cart = [];
+        let totalAmount = 0;
+
+        // Cargar productos en el select
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/api/productos/getAll')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('product_name');
+                    data.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product.product_name;
+                        option.textContent = product.product_name;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error al cargar productos:', error));
+        });
+
+        // Añadir producto al carrito
+        document.getElementById('addToCart').addEventListener('click', function () {
+            const productName = document.getElementById('product_name').value;
+            const quantity = parseInt(document.getElementById('quantity').value, 10);
+
+            if (!productName || !quantity || quantity <= 0) {
+                alert('Datos inválidos. Por favor, revise.');
+                return;
+            }
+
+            // Consultar el precio del producto
+            fetch('/api/productos/getAll')
+                .then(response => response.json())
+                .then(products => {
+                    const product = products.find(p => p.product_name === productName);
+                    if (product) {
+                        const existingItem = cart.find(item => item.product_name === productName);
+                        if (existingItem) {
+                            existingItem.quantity += quantity;
+                        } else {
+                            cart.push({ product_name: productName, quantity, price: product.price });
+                        }
+                        updateCart();
+                    } else {
+                        alert('Producto no encontrado.');
+                    }
+                })
+                .catch(error => console.error('Error al añadir producto al carrito:', error));
+        });
+
+        // Actualizar la tabla del carrito y el total
+        function updateCart() {
+            const cartTable = document.getElementById('cart');
+            cartTable.innerHTML = '';
+            totalAmount = 0;
+
+            cart.forEach((item, index) => {
+                const itemTotal = item.quantity * item.price;
+                totalAmount += itemTotal;
+
+                const row = `
+                    <tr>
+                        <td>${item.product_name}</td>
+                        <td>${item.quantity}</td>
+                        <td>${item.price.toFixed(2)}</td>
+                        <td>${itemTotal.toFixed(2)}</td>
+                        <td>
+                            <button class="w3-button w3-red" onclick="removeFromCart(${index})">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+                cartTable.innerHTML += row;
+            });
+
+            document.getElementById('totalAmount').textContent = totalAmount.toFixed(2);
+        }
+
+        // Eliminar producto del carrito
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCart();
+        }
+
+        // Procesar la venta
+document.getElementById('pay').addEventListener('click', function () {
+    if (cart.length === 0) {
+        alert('El carrito está vacío.');
+        return;
+    }
+
+    fetch('/api/productos/ventas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cart)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(`Error: ${data.error}`);
+        } else {
+            alert('Venta procesada con éxito.');
+            console.log('Fecha de venta:', data.saleDate);  // Aquí muestras la fecha de venta
+            cart = [];
+            updateCart();
+        }
+    })
+    .catch(error => console.error('Error al procesar la venta:', error));
+});
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caja Registradora</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+    <div class="w3-row">
+        <!-- Panel de Formulario -->
+        <div class="w3-col l4 w3-padding">
+            <form class="w3-container w3-padding" id="jsonForm">
+                <h3>Registrar Producto</h3>
+                <label for="product_name">Nombre del Producto:</label>
+                <input class="w3-input" type="text" name="product_name" required>
+                <label for="price">Precio:</label>
+                <input class="w3-input" type="number" name="price" required min="0" step="0.01">
+                <label for="quantity">Cantidad:</label>
+                <input class="w3-input" type="number" name="quantity" required min="1">
+                <button class="w3-button w3-green" type="submit">Registrar Producto</button>
+                <br><br>
+                <button class="w3-button w3-blue" type="button" id="consultar">Consultar Productos</button>
+            </form>
+        </div>
+
+        <!-- Tabla de Productos -->
+        <div class="w3-col l8">
+            <table class="w3-table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Precio</th>
+                        <th>Cantidad</th>
+                        <th>Total</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="productData"></tbody>
+            </table>
+            <h3>Total Produtos: $<span id="totalAmount">0.00</span></h3>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('jsonForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const form = document.getElementById('jsonForm');
+            const formData = new FormData(form);
+            const jsonData = JSON.stringify(Object.fromEntries(formData));
+
+            fetch('/api/productos/insert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: jsonData
+            })
+            .then(response => response.text())
+            .then(data => alert(data))
+            .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('consultar').addEventListener('click', function(event) {
+            event.preventDefault();
+            fetch('/api/productos/getAll')
+            .then(response => response.json())
+            .then(data => {
+                let html = '';
+                let total = 0;
+                data.forEach(d => {
+                    const itemTotal = d.price * d.quantity;
+                    total += itemTotal;
+                    html += `
+                        <tr>
+                            <td>${d.product_name}</td>
+                            <td>${d.price.toFixed(2)}</td>
+                            <td>${d.quantity}</td>
+                            <td>${itemTotal.toFixed(2)}</td>
+                            <td><button class="w3-button w3-red" onclick="deleteProduct(${d.id})">Eliminar</button></td>
+                        </tr>
+                    `;
+                });
+                document.getElementById("productData").innerHTML = html;
+                document.getElementById("totalAmount").textContent = total.toFixed(2);
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function deleteProduct(id) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) return;
+
+    fetch(`/api/productos/delete/${id}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            alert(data.message);
+            document.getElementById('consultar').click(); // Actualiza la lista de productos
+        }
+    })
+    .catch(error => console.error('Error:', error));
+    }
+
+    </script>
+</body>
+</html>
+
